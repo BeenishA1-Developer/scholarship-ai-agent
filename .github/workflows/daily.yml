@@ -8,22 +8,18 @@ on:
 jobs:
   run-agent:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Python setup
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
       - name: Install libraries
         run: pip install requests
-
       - name: Run AI Agent
         env:
-          GEMINI_API_KEY:   ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           AGENT_SECRET_KEY: ${{ secrets.AGENT_SECRET_KEY }}
-          WEBSITE_API_URL:  ${{ secrets.WEBSITE_API_URL }}
-run: python run_agent.py
+          WEBSITE_API_URL: ${{ secrets.WEBSITE_API_URL }}
+        run: python run_agent.py
