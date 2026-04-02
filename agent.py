@@ -1,6 +1,6 @@
 """
 ScholarshipGuide.pk — Daily AI Agent
-Gemini API version (Free)
+OpenRouter API version (Free)
 """
 
 import os
@@ -9,14 +9,14 @@ import requests
 from datetime import datetime
 
 # ============================================
-# CONFIG — GitHub Secrets mein yeh lagao
+# CONFIG — GitHub Secrets
 # ============================================
-GEMINI_API_KEY   = os.environ.get("GEMINI_API_KEY")
-AGENT_SECRET_KEY = os.environ.get("AGENT_SECRET_KEY")
-WEBSITE_API_URL  = os.environ.get("WEBSITE_API_URL")
+OPENROUTER_API_KEY = os.environ.get("GEMINI_API_KEY")  # Same secret name
+AGENT_SECRET_KEY   = os.environ.get("AGENT_SECRET_KEY")
+WEBSITE_API_URL    = os.environ.get("WEBSITE_API_URL")
 
 # ============================================
-# STEP 1: Daily Topics List
+# STEP 1: Daily Topics
 # ============================================
 def get_topic():
     topics = [
@@ -36,13 +36,12 @@ def get_topic():
         "Australian Awards Scholarship 2026 Pakistan guide",
         "How to write SOP for MS application Pakistan",
     ]
-    # Har roz alag topic — din ke hisaab se
     day = datetime.now().day
     return topics[day % len(topics)]
 
 
 # ============================================
-# STEP 2: Gemini AI se Content Generate
+# STEP 2: OpenRouter AI se Content Generate
 # ============================================
 def generate_content(topic):
     prompt = f"""You are a scholarship expert writing for Pakistani students.
@@ -51,13 +50,13 @@ Write a detailed blog post about: "{topic}"
 
 Rules:
 - Write in English
-- Target audience: Pakistani students  
+- Target audience: Pakistani students
 - Length: 600-800 words
 - Use proper HTML tags: <h2>, <h3>, <p>, <ul>, <li>
 - Include Pakistan-specific tips
 - End with encouragement to apply
 
-Return ONLY a JSON object, no extra text, no markdown:
+Return ONLY a JSON object, no extra text, no markdown backticks:
 {{
   "type": "post",
   "title": "...",
@@ -69,28 +68,36 @@ Return ONLY a JSON object, no extra text, no markdown:
   "meta_keywords": "keyword1, keyword2, keyword3"
 }}"""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-
-    body = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.7}
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://scholarshipsguide.xyz",
+        "X-Title": "ScholarshipGuide Agent"
     }
 
-    response = requests.post(url, json=body)
+    body = {
+        "model": "mistralai/mistral-7b-instruct:free",
+        "messages": [{"role": "user", "content": prompt}]
+    }
+
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers=headers,
+        json=body
+    )
 
     if response.status_code != 200:
-        print(f"Gemini error: {response.text}")
+        print(f"OpenRouter error: {response.text}")
         return None
 
-    text = response.json()["candidates"][0]["content"]["parts"][0]["text"]
-
-    # Clean JSON
+    text = response.json()["choices"][0]["message"]["content"]
     text = text.replace("```json", "").replace("```", "").strip()
 
     try:
         return json.loads(text)
     except json.JSONDecodeError as e:
         print(f"JSON error: {e}")
+        print(f"Response: {text[:300]}")
         return None
 
 
@@ -135,10 +142,8 @@ def main():
         return
 
     print(f"Title: {content.get('title')}")
-
     print("Uploading to website...")
     upload_to_website(content)
-
     print("Agent complete!")
 
 
